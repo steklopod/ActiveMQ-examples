@@ -28,6 +28,7 @@ public class MQWriter {
 	@Value("${jms.queue.name}")
 	private String queueName;
 
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(MQWriter.class);
 
 	public static void main(String[] args) {
