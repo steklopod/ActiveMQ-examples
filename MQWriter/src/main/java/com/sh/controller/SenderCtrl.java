@@ -19,8 +19,6 @@ import java.util.List;
 
 @RestController
 public class SenderCtrl {
-	
-	
 	@Autowired
 	@Qualifier("jmsTemplateTopic")
 	private JmsTemplate jmsTemplateTopic;
@@ -40,15 +38,11 @@ public class SenderCtrl {
 	 * @return String - result
 	 */
 	@RequestMapping(value="/sendTopic",method=RequestMethod.POST)
-	public String sendTopic(@RequestBody String msg)
-	{		
-		try 
-		{
-			jmsTemplateTopic.send(session->session.createTextMessage(msg));
+	public String sendTopic(@RequestBody String msg) {
+		try {
+			jmsTemplateTopic.send(session -> session.createTextMessage(msg));
 			return "MESSAGE WAS SENT";
-		}
-		catch (JmsException e) 
-		{
+		} catch (JmsException e) {
 			LOGGER.debug("Error: ",e);
 			return e.getMessage();
 		}
@@ -59,15 +53,11 @@ public class SenderCtrl {
 	 * @return String - result
 	 */
 	@RequestMapping(value="/sendQueue",method=RequestMethod.POST)
-	public String sendQueue(@RequestBody String msg)
-	{		
-		try 
-		{
+	public String sendQueue(@RequestBody String msg) {
+		try {
 			jmsTemplateQueue.send(session->session.createTextMessage(msg));
 			return "MESSAGE WAS SENT";
-		}
-		catch (JmsException e) 
-		{
+		} catch (JmsException e) {
 			LOGGER.debug("Error: ",e);
 			return e.getMessage();
 		}
@@ -79,23 +69,17 @@ public class SenderCtrl {
 	 */
 	@SuppressWarnings("unchecked")
 	@RequestMapping(value="/sendFromFIle",method=RequestMethod.GET)
-	public String sendFromFile()
-	{
-		try 
-		{
+	public String sendFromFile() {
+		try {
 			InputStream iStr = getClass().getClassLoader().getResourceAsStream("messages.txt");
 			List<String> lsRes =  IOUtils.readLines(iStr);
 			executor.execute(createThread(lsRes));
 			return "PROCESS LAUNCHED";
-			
-		} 
+		}
 		catch (IOException e) {
-			
 			LOGGER.debug("Error: ",e);
 			return e.getMessage();
 		}
-		
-		
 	}
 	
 	/**
@@ -103,24 +87,13 @@ public class SenderCtrl {
 	 * @param ls - List&lt;String&gt; 
 	 * @return Thread - created thread
 	 */
-	private Thread createThread(List<String> ls)
-	{
-		Runnable hilo = new Runnable() 
-		{	
-			@Override
-			public void run() 
-			{
-				
-				for(String s : ls)
-				{
-					jmsTemplateQueue.send(session->session.createTextMessage(s));
-				}
-			
+	private Thread createThread(List<String> ls) {
+		Runnable hilo = () -> {
+			for (String s : ls) {
+				jmsTemplateQueue.send(session -> session.createTextMessage(s));
 			}
 		};
-		
-		Thread tarea = new Thread(hilo);
-		return tarea;
+		return new Thread(hilo);
 	}
 
 }
