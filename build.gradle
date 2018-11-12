@@ -1,5 +1,6 @@
 buildscript {
     repositories {
+        mavenLocal()
         mavenCentral()
     }
     dependencies {
@@ -19,6 +20,7 @@ bootJar {
 }
 
 repositories {
+    mavenLocal()
     mavenCentral()
 }
 
@@ -29,5 +31,7 @@ dependencies {
     compile("org.springframework.boot:spring-boot-starter-activemq")
     compile("org.apache.activemq:activemq-broker")
     compile("com.fasterxml.jackson.core:jackson-databind")
+    compile('org.projectlombok:lombok:1.18.4')
+
 }
 

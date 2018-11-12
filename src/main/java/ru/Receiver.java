@@ -1,4 +1,4 @@
-package hello;
+package ru;
 
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
