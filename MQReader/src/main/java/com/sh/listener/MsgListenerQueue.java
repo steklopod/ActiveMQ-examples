@@ -13,7 +13,7 @@ import java.util.UUID;
 public class MsgListenerQueue {
 	
 	/**
-	 * Sender class for topic
+	 * Класс отправителя для топика
 	 */
 	@Autowired
 	@Qualifier("jmsTemplateTopic")
@@ -22,14 +22,11 @@ public class MsgListenerQueue {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MsgListenerQueue.class);
 	
 	/**
-	 * Method that read the Queue when exists messages.
-	 * This method is a listener
-	 * @param msg - String message
+	 * Метод, который читает очередь, когда существует сообщение.
+	 * Этот метод является слушателем
 	 */
-	public void onMessage(String msg) 
-	{	
+	public void onMessage(String msg) {
 		LOGGER.debug(msg);
 		jmsTemplateTopic.send(session->session.createTextMessage(UUID.randomUUID()+" "+ msg));
 	}
-
 }

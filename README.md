@@ -139,30 +139,32 @@ public class MQReaderApp {
 Here see 2 listeners, for topic and for queue,and 2 message adapters and a JmsTemplate for send to topic a message.  
 See the Queue implementation class MsgListenerQueue, that write in log and send to topic the message with UUID.
 
+Здесь можно посмотреть **2 слушателя**: _для темы и для очереди_, и 2 адаптера сообщений и 
+`JmsTemplate` для отправки в тему сообщения.
+_см. класс реализации очереди **`MsgListenerQueue`**, которые записывают в журнал и отправляют 
+в топик сообщение с UUID._
+
 ```java
 @Component
 public class MsgListenerQueue {
 
 	/**
-	 * Sender class for topic
+	 * Класс отправителя для топика
 	 */
 	@Autowired
 	@Qualifier("jmsTemplateTopic")
 	private JmsTemplate jmsTemplateTopic;
-
+	
 	private static final Logger LOGGER = LoggerFactory.getLogger(MsgListenerQueue.class);
-
+	
 	/**
-	 * Method that read the Queue when exists messages.
-	 * This method is a listener
-	 * @param msg - String message
+	 * Метод, который читает очередь, когда существует сообщение.
+	 * Этот метод является слушателем
 	 */
-	public void onMessage(String msg)
-	{
+	public void onMessage(String msg) {
 		LOGGER.debug(msg);
 		jmsTemplateTopic.send(session->session.createTextMessage(UUID.randomUUID()+" "+ msg));
 	}
-
 }
 ```
 
