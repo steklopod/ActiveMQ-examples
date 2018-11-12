@@ -35,24 +35,22 @@ public class MQReaderApp {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(MQReaderApp.class);
 
-	public static void main(String[] args) 
-	{
+	public static void main(String[] args) 	{
 		SpringApplication.run(MQReaderApp.class, args);
 	}
 
     /**
      * Реализация ActiveMQ для подключения фабрики.
      * Если вы хотите использовать другой механизм обмена сообщениями, вы должны его
-     * реализовать здесь.
-     * В этом случае ActiveMQConnectionFactory.
-     *
-     * @return ConnectionFactory - интерфейс JMS
+     * реализовать здесь. В этом случае ActiveMQConnectionFactory.
      **/
     @Bean
     public ConnectionFactory connectionFactory(){
  		LOGGER.debug("<<<<<< Loading connectionFactory");
         ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory();
         connectionFactory.setBrokerURL(broker);
+        connectionFactory.setUserName("system");
+        connectionFactory.setPassword("manager");
         LOGGER.debug(MessageFormat.format("{0} loaded sucesfully >>>>>>>", broker));
         return connectionFactory;
     }

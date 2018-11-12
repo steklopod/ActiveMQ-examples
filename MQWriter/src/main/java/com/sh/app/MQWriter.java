@@ -44,6 +44,8 @@ public class MQWriter {
 		LOGGER.debug("<<<<<< Loading connectionFactory");
 		ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory();
 		connectionFactory.setBrokerURL(broker);
+		connectionFactory.setUserName("system");
+		connectionFactory.setPassword("manager");
 		LOGGER.debug(MessageFormat.format("{0} loaded sucesfully >>>>>>>", broker));
 		return connectionFactory;
 	}

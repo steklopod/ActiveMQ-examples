@@ -120,7 +120,7 @@
 										<goal>copy-resources</goal>
 									</goals>
 									<configuration>
-										<outputDirectory>C:/DEVELOPMENT/DOCKER/appz/</outputDirectory>
+										<!--<outputDirectory>C:/DEVELOPMENT/DOCKER/appz/</outputDirectory>-->
 										<resources>
 											<resource>
 												<!-- Get main artifact -->
