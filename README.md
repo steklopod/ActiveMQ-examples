@@ -169,9 +169,11 @@ public class MsgListenerQueue {
 ```
 
 ### Writer
+Модуль Writer содержит контроллер REST для отправки сообщений в тему и очередь и для отправки 
+сообщений в тестовом файле по одному сообщению в строке.
 
-Writer module contains a REST controller for send messages to topic and queue,and for send messages in a test file,one message per line.  
-Configuration Contains connectionFactory, 2 JmsTemplates and a ThreadPoolExecutor for send all lines of file in other thread.See the configuration
+Конфигурация содержит `connectionFactory`, 2 `JmsTemplate` и `ThreadPoolExecutor` для отправки 
+всех строк файла в другой поток:
 
 ```java
 @SpringBootApplication
@@ -193,13 +195,7 @@ public class MQWriter {
 		SpringApplication.run(MQWriter.class);
 	}
 
-	/**
-	 * ActiveMQ implementation for connection factory. If you want to use other
-	 * messaging engine,you have to implement it here. In this
-	 * case,ActiveMQConnectionFactory.
-	 *
-	 * @return ConnectionFactory - JMS interface
-	 **/
+
 	@Bean
 	public ConnectionFactory connectionFactory() {
 		LOGGER.debug("<<<<<< Loading connectionFactory");
@@ -210,10 +206,6 @@ public class MQWriter {
 	}
 
 
-	 /**
-     * Catching connection factory for better performance if big load
-     * @return ConnectionFactory - cachingConnection
-     **/
 	@Bean
 	public ConnectionFactory cachingConnectionFactory() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
@@ -223,11 +215,6 @@ public class MQWriter {
 	}
 
 
-	/**
-     * Sender configuration for topic
-     * @return JmsTemplate
-     * @see JmsTemplate
-     */
 	@Bean(name = "jmsTemplateTopic")
 	public JmsTemplate jmsTemplateTopic() {
 		LOGGER.debug("<<<<<< Loading jmsTemplateTopic");
@@ -236,16 +223,9 @@ public class MQWriter {
 		template.setDefaultDestinationName(topicName);
 		template.setPubSubDomain(true);
 		LOGGER.debug("jmsTemplateTopic loaded >>>>>>>");
-
 		return template;
 	}
 
-
-	/**
-     * Sender configuration for queue
-     * @return JmsTemplate
-     * @see JmsTemplate
-     */
 	@Bean(name = "jmsTemplateQueue")
 	public JmsTemplate jmsTemplateQueue() {
 		LOGGER.debug("<<<<<< Loading jmsTemplateQueue");
@@ -254,15 +234,10 @@ public class MQWriter {
 		template.setDefaultDestinationName(queueName);
 		template.setPubSubDomain(false);
 		LOGGER.debug("jmsTemplateQueue loaded >>>>>>>>");
-
 		return template;
 	}
 
-	/**
-	 * ThreadPool for long executions
-	 * @return ThreadPoolTaskExecutor
-	 * @see ThreadPoolTaskExecutor
-	 */
+
 	@Bean
 	public ThreadPoolTaskExecutor executor() {
 		ThreadPoolTaskExecutor ex = new ThreadPoolTaskExecutor();
@@ -274,13 +249,9 @@ public class MQWriter {
 }
 ```
 
-REST methods for write in ActiveMQ are:
+Методы REST для записи в ActiveMQ:
+```sbtshell
 * /sendTopic (POST)
 * /sendQueue (POST)
 * /sendFromFIle (GET)
-
-It's easy to work with Apache activeMQ in SpringBoot.
-
-Thanks to :  
-[Apache ActiveMQ](http://activemq.apache.org/)  
-[SpringBoot](https://projects.spring.io/spring-boot/)
+```

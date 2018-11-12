@@ -28,7 +28,6 @@ public class MQWriter {
 	@Value("${jms.queue.name}")
 	private String queueName;
 
-
 	private static final Logger LOGGER = LoggerFactory.getLogger(MQWriter.class);
 
 	public static void main(String[] args) {
@@ -36,12 +35,10 @@ public class MQWriter {
 	}
 
 	/**
-	 * ActiveMQ implementation for connection factory. If you want to use other
-	 * messaging engine,you have to implement it here. In this
-	 * case,ActiveMQConnectionFactory.
-	 * 
-	 * @return ConnectionFactory - JMS interface
-	 **/
+	 * Реализация ActiveMQ для подключения фабрики. Если вы хотите использовать другие
+	 * механизм обмена сообщениями, вы должны реализовать его здесь. В этом
+	 * случай, ActiveMQConnectionFactory.
+	 */
 	@Bean
 	public ConnectionFactory connectionFactory() {
 		LOGGER.debug("<<<<<< Loading connectionFactory");
@@ -50,12 +47,7 @@ public class MQWriter {
 		LOGGER.debug(MessageFormat.format("{0} loaded sucesfully >>>>>>>", broker));
 		return connectionFactory;
 	}
-	
-	
-	 /**
-     * Catching connection factory for better performance if big load
-     * @return ConnectionFactory - cachingConnection
-     **/
+
 	@Bean
 	public ConnectionFactory cachingConnectionFactory() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
@@ -64,12 +56,6 @@ public class MQWriter {
 		return connectionFactory;
 	}
 
-	
-	/**
-     * Sender configuration for topic 
-     * @return JmsTemplate
-     * @see JmsTemplate
-     */
 	@Bean(name = "jmsTemplateTopic")
 	public JmsTemplate jmsTemplateTopic() {
 		LOGGER.debug("<<<<<< Loading jmsTemplateTopic");
@@ -78,16 +64,9 @@ public class MQWriter {
 		template.setDefaultDestinationName(topicName);
 		template.setPubSubDomain(true);
 		LOGGER.debug("jmsTemplateTopic loaded >>>>>>>");
-
 		return template;
 	}
 
-	
-	/**
-     * Sender configuration for queue 
-     * @return JmsTemplate
-     * @see JmsTemplate
-     */
 	@Bean(name = "jmsTemplateQueue")
 	public JmsTemplate jmsTemplateQueue() {
 		LOGGER.debug("<<<<<< Loading jmsTemplateQueue");
@@ -96,15 +75,9 @@ public class MQWriter {
 		template.setDefaultDestinationName(queueName);
 		template.setPubSubDomain(false);
 		LOGGER.debug("jmsTemplateQueue loaded >>>>>>>>");
-
 		return template;
 	}
-	
-	/**
-	 * ThreadPool for long executions
-	 * @return ThreadPoolTaskExecutor
-	 * @see ThreadPoolTaskExecutor
-	 */
+
 	@Bean
 	public ThreadPoolTaskExecutor executor() {
 		ThreadPoolTaskExecutor ex = new ThreadPoolTaskExecutor();
@@ -112,5 +85,4 @@ public class MQWriter {
 		ex.setMaxPoolSize(15);
 		return ex;
 	}
-
 }

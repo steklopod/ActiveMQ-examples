@@ -33,9 +33,7 @@ public class SenderCtrl {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SenderCtrl.class);
 	
 	/**
-	 * REST method for send a message to topic
-	 * @param msg - String
-	 * @return String - result
+	 Методы REST для записи в ActiveMQ:
 	 */
 	@RequestMapping(value="/sendTopic",method=RequestMethod.POST)
 	public String sendTopic(@RequestBody String msg) {
@@ -47,11 +45,7 @@ public class SenderCtrl {
 			return e.getMessage();
 		}
 	}
-	/**
-	 * REST method for send a message to queue
-	 * @param msg - String
-	 * @return String - result
-	 */
+
 	@RequestMapping(value="/sendQueue",method=RequestMethod.POST)
 	public String sendQueue(@RequestBody String msg) {
 		try {
@@ -64,8 +58,7 @@ public class SenderCtrl {
 	}
 	
 	/**
-	 * Send all messages from text file,one per line
-	 * @return String - result
+	 * Отправлять все сообщения из текстового файла, по одному на строку
 	 */
 	@SuppressWarnings("unchecked")
 	@RequestMapping(value="/sendFromFIle",method=RequestMethod.GET)
@@ -83,9 +76,7 @@ public class SenderCtrl {
 	}
 	
 	/**
-	 * Create a thread for iterate and send messages to Queue from list
-	 * @param ls - List&lt;String&gt; 
-	 * @return Thread - created thread
+	 * Создает поток для итерации и отправки сообщений в очередь из списка
 	 */
 	private Thread createThread(List<String> ls) {
 		Runnable hilo = () -> {
