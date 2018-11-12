@@ -1,126 +1,309 @@
-В этом руководстве описывается процесс публикации и подписки на сообщения с помощью брокера JMS.
+## JMSActiveMQ SpringBoot пример
 
-### Что мы создадим?
-Вы создадите приложение, которое использует спринговый `JmsTemplate` для публикации
-одного сообщения и подписки на него с помощью аннотированного метода `@JmsListener` управляемого Бина.
+Как реализовать Spring JMS с Apache, в частности, ActiveMQ?
 
-### Создание получателя сообщения
-Spring предоставляет средства для публикации сообщений в любом `POJO`.
+Со `Spring Boot` это легко.Этот проект имеет 2 модуля, `writer` и `reader`. Оба имеют 
+одинаковые зависимости.
 
-В этом руководстве вы рассмотрите, как отправить сообщение по брокеру сообщений JMS. Чтобы
-начать, давайте создадим очень простой POJO, который воплощает в себе детали сообщения
-электронной почты. Обратите внимание, мы не отправляем сообщение по электронной почте. **Мы
-просто посылаем детали из одного места в другое О ТОМ, ЧТО отправить в сообщении**.
+With spring-boot starters only have to call spring-boot-starter-activemq, the package contains 
+spring JMS and Apache ActiveMQ api.
 
-`src/main/java/ru/Email.java`
+## Reader module
+
+In Reader module go to configure SpringBoot application for read from topic and from queue.  
+Additionally add a writer,that is a JmsTemplate,for read from queue and write in topic operation.  
+Look Java Configuration
 
 ```java
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class Email {
+@SpringBootApplication
+@ComponentScan(basePackages="com.sh")
+public class MQReaderApp
+{
 
-    private String to;
-    private String body;
+	@Value("${jms.broker.url}")
+	private String broker;
 
-    @Override
-    public String toString() {
-        return String.format("Email{to=%s, body=%s}", getTo(), getBody());
+	@Value("${jms.topic.name}")
+    private String topicName;
+
+	@Value("${jms.queue.name}")
+    private String queueName;
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(MQReaderApp.class);
+
+	public static void main(String[] args)
+	{
+		SpringApplication.run(MQReaderApp.class, args);
+	}
+
+	/**
+	 * ActiveMQ implementation for connection factory.
+	 * If you want to use other messaging engine,you have to implement it here.
+	 * In this case,ActiveMQConnectionFactory.
+	 * @return ConnectionFactory - JMS interface
+	 **/
+	@Bean
+    public ConnectionFactory connectionFactory(){
+ 		LOGGER.debug("<<<<<< Loading connectionFactory");
+        ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory();
+        connectionFactory.setBrokerURL(broker);
+        LOGGER.debug(MessageFormat.format("{0} loaded sucesfully >>>>>>>", broker));
+        return connectionFactory;
     }
-}
+
+    /**
+     * Catching connection factory for better performance if big load
+     * @return ConnectionFactory - cachingConnection
+     **/
+    @Bean
+    public ConnectionFactory cachingConnectionFactory(){
+        CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+        connectionFactory.setTargetConnectionFactory(connectionFactory());
+        connectionFactory.setSessionCacheSize(10);
+        return connectionFactory;
+    }
+
+    /**
+     * Message listener adapter configuration for topic reception.
+     * MsgListenerTopic class implements in method onMessage
+     * @param topic - MsgListenerTopic
+     * @see MsgListenerTopic
+     * @return MessageListenerAdapter
+     * @see MessageListenerAdapter
+     **/
+    @Bean(name = "adapterTopic")
+    public MessageListenerAdapter adapterTopic(MsgListenerTopic topic)
+    {
+    	MessageListenerAdapter listener = new MessageListenerAdapter(topic);
+    	listener.setDefaultListenerMethod("onMessage");
+    	listener.setMessageConverter(new SimpleMessageConverter());
+    	return listener;
+
+    }
+
+    /**
+     * Message listener adapter configuration for queue reception.
+     * MsgListenerQueue class implements in method onMessage
+     * @param queue - MsgListenerQueue
+     * @see MsgListenerQueue
+     * @return MessageListenerAdapter
+     * @see MessageListenerAdapter
+     **/
+    @Bean(name = "adapterQueue")
+    public MessageListenerAdapter adapterQueue(MsgListenerQueue queue)
+    {
+    	MessageListenerAdapter listener =  new MessageListenerAdapter(queue);
+    	listener.setDefaultListenerMethod("onMessage");
+    	listener.setMessageConverter(new SimpleMessageConverter());
+    	return listener;
+
+    }
+
+    /**
+     * Topic listener container.
+     * This method configure a listener for a topic
+     * @param adapterTopic -  MessageListenerAdapter
+     * @see MessageListenerAdapter
+     * @see SimpleMessageListenerContainer
+     **/
+    @Bean(name = "jmsTopic")
+    public SimpleMessageListenerContainer getTopic(MessageListenerAdapter adapterTopic){
+    	LOGGER.debug("<<<<<< Loading Listener topic");
+    	SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+    	// settings for listener: connectonFactory,Topic name,MessageListener and PubSubDomain (true if is a topic)
+        container.setConnectionFactory(connectionFactory());
+        container.setDestinationName(topicName);
+        container.setMessageListener(adapterTopic);
+        container.setPubSubDomain(true);
+        LOGGER.debug("Listener topic loaded >>>>>>>>>");
+
+        return container;
+    }
+
+    /**
+     * Queue listener container.
+     * This method configure a listener for a queue
+     * @param adapterQueue -  MessageListenerAdapter
+     * @see MessageListenerAdapter
+     * @see SimpleMessageListenerContainer
+     **/
+    @Bean(name = "jmsQueue")
+    public SimpleMessageListenerContainer getQueue(MessageListenerAdapter adapterQueue){
+    	LOGGER.debug("<<<<<< Loading Listener Queue");
+    	SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+    	// settings for listener: connectonFactory,Topic name,MessageListener and PubSubDomain (false if is a queue)
+        container.setConnectionFactory(connectionFactory());
+        container.setDestinationName(queueName);
+        container.setMessageListener(adapterQueue);
+        container.setPubSubDomain(false);
+        LOGGER.debug("Listener Queue loaded >>>>>>>");
+
+        return container;
+    }
+
+
+
+    /**
+     * Sender configuration for topic
+     * @return JmsTemplate
+     * @see JmsTemplate
+     */
+    @Bean(name = "jmsTemplateTopic")
+    public JmsTemplate jmsTemplateTopic(){
+    	LOGGER.debug("<<<<<< Loading jmsTemplateTopic");
+        JmsTemplate template = new JmsTemplate();
+        template.setConnectionFactory(connectionFactory());
+        template.setDefaultDestinationName(topicName);
+        template.setPubSubDomain(true);
+        LOGGER.debug("jmsTemplateTopic loaded >>>>>>>");
+
+        return template;
+    }
 ```
 
-Это POJO довольно прост, содержит два поля, `to` и `body`, а также предполагаемый набор геттеров и сеттеров.
-
-Здесь можно определить получателя сообщения:
-
-`src/main/java/ru/Receiver.java`
+Here see 2 listeners, for topic and for queue,and 2 message adapters and a JmsTemplate for send to topic a message.  
+See the Queue implementation class MsgListenerQueue, that write in log and send to topic the message with UUID.
 
 ```java
 @Component
-public class Receiver {
+public class MsgListenerQueue {
 
-    @JmsListener(destination = "mailbox", containerFactory = "myFactory")
-    public void receiveMessage(Email email) {
-        System.out.println("Received <" + email + ">");
-    }
+	/**
+	 * Sender class for topic
+	 */
+	@Autowired
+	@Qualifier("jmsTemplateTopic")
+	private JmsTemplate jmsTemplateTopic;
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(MsgListenerQueue.class);
+
+	/**
+	 * Method that read the Queue when exists messages.
+	 * This method is a listener
+	 * @param msg - String message
+	 */
+	public void onMessage(String msg)
+	{
+		LOGGER.debug(msg);
+		jmsTemplateTopic.send(session->session.createTextMessage(UUID.randomUUID()+" "+ msg));
+	}
+
 }
 ```
 
-`Receiver` (получатель) также известен как POJO, управляемый сообщением. Как вы можете видеть
-в приведенном выше коде, нет необходимости реализовывать какой-либо конкретный интерфейс или
-иметь какое-либо конкретное имя метода. Кроме того, метод может иметь очень гибкую сигнатуру.
-Обратите внимание, в частности, что этот класс не имеет импорта в API JMS.
+### Writer
 
-Аннотация `@JmsListener` определяет имя назначения, которое должен слушать этот метод, и
-ссылку на `JmsListenerContainerFactory`, чтобы использовать для создания базового контейнера
-прослушивателя сообщений. Строго говоря, этот последний атрибут не нужен, если вам не нужно
-настроить способ сборки контейнера, поскольку `Spring Boot` регистрирует фабрику по умолчанию,
-если это необходимо. [Более подробно это описано в справочной документации](https://docs.spring.io/spring/docs/current/spring-framework-reference/integration.html#jms-annotated-method-signature).
-
-### Отправка и получение сообщений JMS с Spring
-Затем подключите отправителя и получателя.
-
-`src/main/java/ru/Application.java`
-
-`@EnableJms` запускает обнаружение методов с аннотацией `@JmsListener`, создание контейнера
-получатель сообщения `под капотом`.
-
-Для ясности мы также определили бин `myFactory`, на который ссылаются в аннотации `JmsListener`
- получателя. Поскольку мы используем инфраструктуру `DefaultJmsListenerContainerFactoryconfigurer`,
-  предоставляемую Spring Boot, этот `JmsMessageListenerContainer` будет идентичен тому,
-  который создается загрузчиком по умолчанию.
+Writer module contains a REST controller for send messages to topic and queue,and for send messages in a test file,one message per line.  
+Configuration Contains connectionFactory, 2 JmsTemplates and a ThreadPoolExecutor for send all lines of file in other thread.See the configuration
 
 ```java
-    @Bean
-    public JmsListenerContainerFactory<?> myFactory(ConnectionFactory connectionFactory,
-                                                    DefaultJmsListenerContainerFactoryConfigurer configurer) {
-        DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
-        // Это обеспечивает всю загрузку по умолчанию к этой фабрике, включая конвертер сообщений
-        configurer.configure(factory, connectionFactory);
-        return factory;
-    }
+@SpringBootApplication
+@ComponentScan(basePackages = "com.sh")
+public class MQWriter {
 
+	@Value("${jms.broker.url}")
+	private String broker;
+
+	@Value("${jms.topic.name}")
+	private String topicName;
+
+	@Value("${jms.queue.name}")
+	private String queueName;
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(MQWriter.class);
+
+	public static void main(String[] args) {
+		SpringApplication.run(MQWriter.class);
+	}
+
+	/**
+	 * ActiveMQ implementation for connection factory. If you want to use other
+	 * messaging engine,you have to implement it here. In this
+	 * case,ActiveMQConnectionFactory.
+	 *
+	 * @return ConnectionFactory - JMS interface
+	 **/
+	@Bean
+	public ConnectionFactory connectionFactory() {
+		LOGGER.debug("<<<<<< Loading connectionFactory");
+		ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory();
+		connectionFactory.setBrokerURL(broker);
+		LOGGER.debug(MessageFormat.format("{0} loaded sucesfully >>>>>>>", broker));
+		return connectionFactory;
+	}
+
+
+	 /**
+     * Catching connection factory for better performance if big load
+     * @return ConnectionFactory - cachingConnection
+     **/
+	@Bean
+	public ConnectionFactory cachingConnectionFactory() {
+		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		connectionFactory.setTargetConnectionFactory(connectionFactory());
+		connectionFactory.setSessionCacheSize(10);
+		return connectionFactory;
+	}
+
+
+	/**
+     * Sender configuration for topic
+     * @return JmsTemplate
+     * @see JmsTemplate
+     */
+	@Bean(name = "jmsTemplateTopic")
+	public JmsTemplate jmsTemplateTopic() {
+		LOGGER.debug("<<<<<< Loading jmsTemplateTopic");
+		JmsTemplate template = new JmsTemplate();
+		template.setConnectionFactory(connectionFactory());
+		template.setDefaultDestinationName(topicName);
+		template.setPubSubDomain(true);
+		LOGGER.debug("jmsTemplateTopic loaded >>>>>>>");
+
+		return template;
+	}
+
+
+	/**
+     * Sender configuration for queue
+     * @return JmsTemplate
+     * @see JmsTemplate
+     */
+	@Bean(name = "jmsTemplateQueue")
+	public JmsTemplate jmsTemplateQueue() {
+		LOGGER.debug("<<<<<< Loading jmsTemplateQueue");
+		JmsTemplate template = new JmsTemplate();
+		template.setConnectionFactory(connectionFactory());
+		template.setDefaultDestinationName(queueName);
+		template.setPubSubDomain(false);
+		LOGGER.debug("jmsTemplateQueue loaded >>>>>>>>");
+
+		return template;
+	}
+
+	/**
+	 * ThreadPool for long executions
+	 * @return ThreadPoolTaskExecutor
+	 * @see ThreadPoolTaskExecutor
+	 */
+	@Bean
+	public ThreadPoolTaskExecutor executor() {
+		ThreadPoolTaskExecutor ex = new ThreadPoolTaskExecutor();
+		ex.setCorePoolSize(5);
+		ex.setMaxPoolSize(15);
+		return ex;
+	}
+
+}
 ```
-`MessageConverter` по умолчанию может преобразовывать только базовые типы (такие как `String`,
-`Map`, `Serializable`), и наша электронная почта не сериализуема специально. Мы хотим
-использовать `Jackson` и сериализовать содержимое в `json` в текстовом формате (т.е. как `TextMessage`).
-`Spring Boot` обнаружит наличие `MessageConverter` и свяжет его как с `jmstemplate` по умолчанию,
-так и с любым `JmsListenerContainerFactory`, созданным `DefaultJmsListenerContainerFactoryconfigurer`.
 
-```java
-    @Bean // Сериализация содержимого сообщения в json с помощью TextMessage
-    public MessageConverter jacksonJmsMessageConverter() {
-        MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
-        converter.setTargetType(MessageType.TEXT);
-        converter.setTypeIdPropertyName("_type");
-        return converter;
-    }
+REST methods for write in ActiveMQ are:
+* /sendTopic (POST)
+* /sendQueue (POST)
+* /sendFromFIle (GET)
 
-```
+It's easy to work with Apache activeMQ in SpringBoot.
 
-`JmsTemplate` делает это очень простым для отправки сообщений в пункт назначения JMS. В методе
-`main runner` после запуска вы можете просто использовать `jmsTemplate` для отправки электронного
-письма. Поскольку наш пользовательский `MessageConverter` был автоматически связан с ним,
-документ json будет создан только в `TextMessage`.
-
-Два бина, которые вы не видите - `JmsTemplate` и `ConnectionFactory`. Они создаются автоматически
-с помощью Spring Boot. В этом случае брокер `ActiveMQ` запускается встроенно (embedded).
-
-По умолчанию Spring Boot создает `JmsTemplate`, настроенный для передачи в очереди, если
-`pubSubDomain` имеет значение `false`. `JmsMessageListenerContainer` также настроен то же самое.
-Для переопределения установите `spring.jms.isPubSubDomain=true` через настройки свойств загрузки
-(либо внутри приложения.свойства или переменной среды). Затем убедитесь, что принимающий
-контейнер имеет те же настройки.
-
-Замечание: `Jmstemplate` может получить сообщения сразу через свой `receive` метод, но это
-работает только одновременно, значить блокирующе. Поэтому рекомендуется использовать контейнер
-прослушивателя, например `DefaultMessageListenerContainer`, с фабрикой подключений на основе
-кэша, чтобы использовать сообщения асинхронно и с максимальной эффективностью подключения.
-
-Когда он работает, похоронен среди всех журналов, вы должны увидеть эти сообщения:
-
-....
-Sending an email message.
-Received <Email{to=info@example.com, body=ru}>
-....
+Thanks to :  
+[Apache ActiveMQ](http://activemq.apache.org/)  
+[SpringBoot](https://projects.spring.io/spring-boot/)
