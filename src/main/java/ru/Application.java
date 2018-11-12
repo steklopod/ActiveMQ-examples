@@ -19,6 +19,7 @@ import javax.jms.ConnectionFactory;
 @EnableJms
 public class Application {
     //https://spring.io/guides/gs/messaging-jms/
+
     @Bean
     public JmsListenerContainerFactory<?> myFactory(ConnectionFactory connectionFactory,
                                                     DefaultJmsListenerContainerFactoryConfigurer configurer) {

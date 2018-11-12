@@ -16,5 +16,4 @@ public class Email {
     public String toString() {
         return String.format("Email{to=%s, body=%s}", getTo(), getBody());
     }
-
 }

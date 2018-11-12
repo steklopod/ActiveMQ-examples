@@ -10,5 +10,4 @@ public class Receiver {
     public void receiveMessage(Email email) {
         System.out.println("Received <" + email + ">");
     }
-
 }
